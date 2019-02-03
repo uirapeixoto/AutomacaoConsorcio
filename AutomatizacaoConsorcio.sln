@@ -3,19 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Query", "Automacao.Query\Automacao.Query.csproj", "{3D755D77-9BEE-4F07-8CE7-272AC544C461}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Query", "Automacao.Query\Automacao.Query.csproj", "{3D755D77-9BEE-4F07-8CE7-272AC544C461}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Command", "Automacao.Command\Automacao.Command.csproj", "{3D62AE27-E944-4D2B-8469-E33470562834}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Command", "Automacao.Command\Automacao.Command.csproj", "{3D62AE27-E944-4D2B-8469-E33470562834}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Contract", "Automacao.Contract\Automacao.Contract.csproj", "{2A04A7B4-13AC-4FC1-B8E7-4ACA717DA3D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Contract", "Automacao.Contract\Automacao.Contract.csproj", "{2A04A7B4-13AC-4FC1-B8E7-4ACA717DA3D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Infra", "Automacao.Infra\Automacao.Infra.csproj", "{7060D144-C83D-48B6-B29F-5360B343180B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Infra", "Automacao.Infra\Automacao.Infra.csproj", "{7060D144-C83D-48B6-B29F-5360B343180B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Domain", "Automacao.Dominio\Automacao.Domain.csproj", "{4613F15C-7543-44E4-BB2F-3F2EF339FB71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Domain", "Automacao.Dominio\Automacao.Domain.csproj", "{4613F15C-7543-44E4-BB2F-3F2EF339FB71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Api", "Automacao.Api\Automacao.Api.csproj", "{878E0A7B-575E-4542-B127-1D52810CFBE4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Api", "Automacao.Api\Automacao.Api.csproj", "{878E0A7B-575E-4542-B127-1D52810CFBE4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automacao.Core", "Automacao.Core\Automacao.Core.csproj", "{DDCABB69-802F-4955-988A-28C047A887B9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Automacao.Core", "Automacao.Core\Automacao.Core.csproj", "{DDCABB69-802F-4955-988A-28C047A887B9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

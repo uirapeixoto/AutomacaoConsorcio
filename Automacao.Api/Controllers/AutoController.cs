@@ -1,20 +1,21 @@
-﻿using Automacao.Api.ViewModel;
-using Automacao.Core;
-using Microsoft.AspNetCore.Mvc;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
+using Automacao.Api.ViewModel;
+using Automacao.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Automacao.Api.Controllers
 {
     [Produces("application/json")]
     [Route("api/[controller]")]
-    public class TesteController : Controller
+    public class AutoController : ControllerBase
     {
-        [HttpGet("[action]")]
-        public async Task<IEnumerable<CarViewModel>> GetCars()
+        // GET: api/Auto
+        [HttpGet]
+        public async Task<IEnumerable<CarViewModel>> Get()
         {
             try
             {
@@ -35,6 +36,31 @@ namespace Automacao.Api.Controllers
             {
                 return new List<CarViewModel>();
             }
+        }
+
+        // GET: api/Auto/5
+        [HttpGet("{id}", Name = "Get")]
+        public string Get(int id)
+        {
+            return "value";
+        }
+
+        // POST: api/Auto
+        [HttpPost]
+        public void Post([FromBody] string value)
+        {
+        }
+
+        // PUT: api/Auto/5
+        [HttpPut("{id}")]
+        public void Put(int id, [FromBody] string value)
+        {
+        }
+
+        // DELETE: api/ApiWithActions/5
+        [HttpDelete("{id}")]
+        public void Delete(int id)
+        {
         }
     }
 }
