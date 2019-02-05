@@ -15,7 +15,7 @@ namespace Automacao.Api.Controllers
     {
         // GET: api/Auto
         [HttpGet]
-        public async Task<IEnumerable<CarViewModel>> Get()
+        public async Task<ResponseViewModel<CarViewModel>> Get()
         {
             try
             {
@@ -23,18 +23,25 @@ namespace Automacao.Api.Controllers
                 {
                     var result = await robo.GetCars();
 
-                    return result.Select(x => new CarViewModel
+                    var response = new ResponseViewModel<CarViewModel>();
+                    response.Message = "";
+                    response.Data = result.Select(x => new CarViewModel
                     {
                         Model = x.Model,
                         Price = x.Price,
                         Link = x.Link,
                         ImageUrl = x.ImageUrl
-                    }).ToList(); ;
+                    }).ToList();
+
+                    return  response;
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return new List<CarViewModel>();
+                return new ResponseViewModel<CarViewModel> {
+                    Message = ex.Message,
+                    Data = new List<CarViewModel>()
+                };
             }
         }
 

@@ -3,6 +3,7 @@ using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Automacao.Core
 
         public async Task<IEnumerable<CarModel>> GetCars()
         {
+
             var url = "https://www.automobile.tn/neuf/bmw.3/";
             var httpClient = new HttpClient();
             var html = await httpClient.GetStringAsync(url);

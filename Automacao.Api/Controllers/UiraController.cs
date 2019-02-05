@@ -14,7 +14,7 @@ namespace Automacao.Api.Controllers
     public class UiraController : Controller
     {
         [HttpPost("[action]")]
-        public string Login([FromBody] UiraUsuarioLoginViewModel usuario)
+        public string Login([FromBody] UsuarioLoginViewModel usuario)
         {
             try
             {

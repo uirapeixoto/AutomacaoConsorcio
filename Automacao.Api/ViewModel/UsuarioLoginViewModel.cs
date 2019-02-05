@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace Automacao.Api.ViewModel
 {
-    public class UiraUsuarioLoginViewModel
+    public class UsuarioLoginViewModel
     {
-        public string Nome{ get; set; }
+        public string Nome { get; set; }
         public string Email { get; set; }
         public string Senha { get; set; }
     }
