@@ -30,12 +30,20 @@ namespace Automacao.Core.Helper
         public string AssemblePostPayload()
         {
             StringBuilder sb = new StringBuilder();
-            foreach (var element in this)
+            if (this.Count > 0)
             {
-                string value = System.Web.HttpUtility.UrlEncode(element.Value);
-                sb.Append("&" + element.Key + "=" + value);
+                foreach (var element in this)
+                {
+                    string value = System.Web.HttpUtility.UrlEncode(element.Value);
+                    sb.Append("&" + element.Key + "=" + value);
+                }
+                return sb.ToString().Substring(1);
             }
-            return sb.ToString().Substring(1);
+            else
+            {
+                return "";
+            }
+            
         }
     }
 }

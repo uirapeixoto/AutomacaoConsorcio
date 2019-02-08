@@ -31,5 +31,9 @@ namespace Automacao.Core.Helper
             return "gzip,deflate";
         }
 
+        public static string GetConnection()
+        {
+            return "keep-alive";
+        }
     }
 }

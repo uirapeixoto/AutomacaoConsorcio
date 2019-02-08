@@ -1,8 +1,12 @@
 ﻿using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
+using System.Web;
 
 namespace Automacao.Core.Helper
 {
@@ -17,12 +21,13 @@ namespace Automacao.Core.Helper
 
         public List<string> toRemoveHeader;
 
+        private CookieContainer _cookies;
+
         public bool IsXMLPost { get; set; }
 
         public string XmlToPost { get; set; }
 
         public string lasUrl;
-
 
         public string EncodingTexto { get; set; }
         
@@ -58,7 +63,7 @@ namespace Automacao.Core.Helper
         public string Get(string url)
         {
             _isPost = false;
-            CreateWebRequestObject().Load(url);
+            _htmlDoc = CreateWebRequestObject().Load(url);
             return _htmlDoc.DocumentNode.InnerHtml;
         }
 
@@ -72,7 +77,18 @@ namespace Automacao.Core.Helper
             return _htmlDoc.DocumentNode.InnerHtml;
         }
 
-        
+        public BrowserSession()
+        {
+            _cookies = new CookieContainer();
+        }
+
+        /// <summary>
+        /// Limpar os cookies
+        /// </summary>
+        public void ClearCookies()
+        {
+            _cookies = new CookieContainer();
+        }
 
         /// <summary>
         /// Event handler for HtmlWeb.PreRequestHandler. Occurs before an HTTP request is executed.
@@ -114,7 +130,6 @@ namespace Automacao.Core.Helper
                 AutoDetectEncoding = false,
                 OverrideEncoding = Encoding.GetEncoding(dsEnc)
             };
-
 
             web.UseCookies = true;
             web.PreRequest = new HtmlWeb.PreRequestHandler(OnPreRequest);
@@ -178,9 +193,11 @@ namespace Automacao.Core.Helper
             _isPost = true;
 
             CreateWebRequestObject().Load(url, "POST");
-            if (string.IsNullOrEmpty(this.JavaScriptText))
+
+            if (string.IsNullOrEmpty(JavaScriptText))
                 return _htmlDoc.DocumentNode.InnerHtml;
-            return this.JavaScriptText;
+
+            return JavaScriptText;
         }
 
         /// <summary>
@@ -215,6 +232,8 @@ namespace Automacao.Core.Helper
             myWebHeaderCollection.Add("Accept-Language", SettingsManager.GetSessionAcceptLanguage());
             myWebHeaderCollection.Add("AcceptCharset", SettingsManager.GetSessionAcceptCharset());
             myWebHeaderCollection.Add("TransferEncoding", SettingsManager.GetSessionTransferEncoding());
+            myWebHeaderCollection.Add("Connection", SettingsManager.GetConnection());
+
             if (extraHeader != null)
             {
                 foreach (var kv in extraHeader)
@@ -241,6 +260,8 @@ namespace Automacao.Core.Helper
             return true;
         }
 
+        
+
         /// <summary>
         /// 
         /// </summary>
@@ -264,6 +285,124 @@ namespace Automacao.Core.Helper
             }
             return this.RTFData;
         }
+
+
+        /// <summary>
+        /// Append a url parameter to a string builder, url-encodes the value
+        /// </summary>
+        /// <param name="sb"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        protected void AppendParameter(StringBuilder sb, string name, string value)
+        {
+            string encodedValue = HttpUtility.UrlEncode(value);
+            sb.AppendFormat("{0}={1}&", name, encodedValue);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public HttpWebResponse SendDataToService(string url, Dictionary<string,string> dados)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var item in dados)
+            {
+                AppendParameter(sb, item.Key, item.Value);
+            }
+            
+            byte[] buff = Encoding.UTF8.GetBytes(sb.ToString());
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded";
+            //request.Credentials = CredentialCache.DefaultNetworkCredentials; // ??
+
+            using (Stream requestStream = request.GetRequestStream())
+            {
+                requestStream.Write(buff, 0, buff.Length);
+            }
+
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            Stream stream = response.GetResponseStream();
+            HtmlDocument doc = new HtmlDocument();
+
+            doc.Load(stream);
+
+            FileName = doc.DocumentNode.InnerHtml;
+
+            return response;
+
+            // do something with response
+        }
+
+        /// <summary>
+        /// Retorna o documento html da pagina
+        /// </summary>
+        /// <returns></returns>
+        public async Task<HtmlDocument> GetHtmlDocument(string url)
+        {
+            var httpClient = new HttpClient();
+            var html = await httpClient.GetStringAsync(url);
+            var htmlDocument = new HtmlDocument();
+            htmlDocument.LoadHtml(html);
+
+            return htmlDocument;
+        }
+
+        #region Cookies
+        /// <summary>
+        /// Criar uma requisição considerando os cookies
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public string Get2(string url)
+        {
+            HtmlWeb web = new HtmlWeb();
+            web.UseCookies = true;
+            web.PreRequest = new HtmlWeb.PreRequestHandler(OnPreRequest2);
+            web.PostResponse = new HtmlWeb.PostResponseHandler(OnAfterResponse2);
+            HtmlDocument doc = web.Load(url);
+            return doc.DocumentNode.InnerHtml;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public bool OnPreRequest2(HttpWebRequest request)
+        {
+            request.CookieContainer = _cookies;
+            return true;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="response"></param>
+        protected void OnAfterResponse2(HttpWebRequest request, HttpWebResponse response)
+        {
+            //do nothing
+        }
+        /// <summary>
+        /// Salva o cookie da pagina
+        /// </summary>
+        /// <param name="response"></param>
+        private void SaveCookiesFrom2(HttpWebResponse response)
+        {
+            if ((response.Cookies.Count > 0))
+            {
+                if (Cookies == null)
+                {
+                    Cookies = new CookieCollection();
+                }
+                Cookies.Add(response.Cookies);
+                _cookies.Add(Cookies);     //-> add the Cookies
+            }
+        }
+        #endregion
 
         public void Dispose()
         {

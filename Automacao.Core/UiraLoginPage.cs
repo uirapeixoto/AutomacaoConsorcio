@@ -16,13 +16,16 @@ namespace Automacao.Core
             try
             {
                 //http://refactoringaspnet.blogspot.com/2010/04/using-htmlagilitypack-to-get-and-post.html
-                    BrowserSession b = new BrowserSession();
-                    b.Get("https://loja.uira.com.br/loja/index.php?controller=authentication&back=my-account");
-                    b.FormElements["email"] = email;
-                    b.FormElements["passwd"] = senha;
-                    string response = b.Post("https://loja.uira.com.br/loja/index.php?controller=authentication&back=my-account");
+                BrowserSession b = new BrowserSession();
 
-                    return response;
+                var dados = new Dictionary<string, string>()
+                    {
+                        {"email", email},
+                        {"passwd", senha},
+                    };
+
+                var result = b.SendDataToService("https://loja.uira.com.br/loja/index.php?controller=authentication&back=my-account", dados);
+                return b.FileName;
             }
             catch (Exception ex)
             {
