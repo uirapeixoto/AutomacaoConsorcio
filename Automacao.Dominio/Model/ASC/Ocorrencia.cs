@@ -6,24 +6,33 @@ namespace Automacao.Domain.Model.ASC
 {
     public class Ocorrencia
     {
-        public DateTime DataConclusao { get; set; }
 
         public string OID { get; set; }
         public string QueueItemID { get; set; }
+        public string Tipo { get; set; }
+        public string TipoId { get; set; }
         public string Titulo { get; set; }
+        public string Grupo { get; set; }
+        public string Cota { get; set; }
         public string NumeroOcorrencia { get; set; }
-        public DateTime DataPrevistaConclusao { get; set; }
+        public DateTime? DataPrevistaConclusao { get; set; }
+        public DateTime? DataConclusao { get; set; }
+        public DateTime? DataCriacao { get; set; }
         public string CanalEntrada { get; set; }
         public string ReferenteA { get; set; }
         public string CPFCNPJ { get; set; }
         public string NomeCliente { get; set; }
-        public DateTime DataCriacao { get; set; }
         public string Status { get; set; }
         public string Fila { get; set; }
         public string StatusAtividade { get; set; }
         public List<Anexo> Anexos { get; set; }
         public bool SinistroOnline { get; set; }
         public ReferenteAEnum EnunReferenteA { get; set; }
+
+        public Ocorrencia()
+        {
+            Anexos = new List<Anexo>();
+        }
 
         public enum ReferenteAEnum
         {

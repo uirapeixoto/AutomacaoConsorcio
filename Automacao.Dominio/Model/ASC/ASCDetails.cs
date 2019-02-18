@@ -15,9 +15,9 @@ namespace Automacao.Domain.Model.ASC
         public string CanalEntrada { get; set; }
         public string CPFCNPJ { get; set; }
         public string NomeCliente { get; set; }
-        public DateTime DataConclusao { get; set; }
-        public DateTime DataCriacao { get; set; }
-        public DateTime DataPrevistaConclusao { get; set; }
+        public DateTime? DataConclusao { get; set; }
+        public DateTime? DataCriacao { get; set; }
+        public DateTime? DataPrevistaConclusao { get; set; }
         public string AnexoAlteradoPor { get; set; }
         public string LinkArquivoComunicado { get; set; }
         public string Empresa { get; set; }

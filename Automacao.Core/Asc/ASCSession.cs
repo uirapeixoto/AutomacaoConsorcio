@@ -18,42 +18,57 @@ namespace Automacao.Core.Asc
 {
     public class ASCSession : IDisposable
     {
+
+        private string _baseurl;
+        private bool _authenticated;
+        private string _user;
+        private string _password;
+        private string _encondingText;
+        private bool _userCredential;
+        private bool _autoRedirect;
+
         public BrowserSession bs = new BrowserSession();
-        public string User { get; private set; }
-        public string Pass { get; private set; }
-        public bool Autenticad { get; private set; }
+        public bool Autenticated {
+            get {
+                return _authenticated;
+            }
+        }
         public List<string> IgnoredIds { get; set; }
 
-        public ASCSession(string user, string pass)
+        public ASCSession(string user, string password)
         {
-            this.User = user;
-            this.Pass = pass;
+            _user = user;
+            _password = password;
+            _baseurl = "http://dynamics.caixaseguros.intranet:5555/CRMCAD/";
+
             bs = new BrowserSession();
             bs.EncodingTexto = "utf-8";
+
             Autenticar();
+
         }
-         
+
         /// <summary>
         /// Faz a autenticação do ASC
         /// </summary>
         /// <returns></returns>
         public bool Autenticar()
         {
-            this.Autenticad = false;
+            _authenticated = false;
             try
             {
                 bs.UseCredentials = true;
-                bs.Credentials = new System.Net.NetworkCredential(User, Pass);
-                var loged = bs.Get("http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx");
+                bs.Credentials = new System.Net.NetworkCredential(_user, _password);
+                var loged = bs.Get($"{_baseurl}main.aspx");
                 if (loged.Contains("Importante:"))
-                    this.Autenticad = true;
+                    _authenticated = true;
             }
             catch (Exception ex)
             {
 
-                throw new Exception("Falha ao tentar autenticar usuário " + this.User + " " + ex.Message);
+                throw new Exception($@"Falha ao tentar autenticar usuário {_user}. Erro: {ex.Message}");
             }
-            return this.Autenticad;
+            return _authenticated;
 
         }
 
@@ -61,8 +76,8 @@ namespace Automacao.Core.Asc
         public Ocorrencia GetOcorrenciaByOID(string oID)
         {
             bs.UseCredentials = true;
-            bs.Credentials = new System.Net.NetworkCredential(this.User, this.Pass);
-            if (!this.Autenticad)
+            bs.Credentials = new System.Net.NetworkCredential(_user, _password);
+            if (!_authenticated)
                 Autenticar();
             Ocorrencia a = new Ocorrencia();
             a.OID = oID;
@@ -180,12 +195,12 @@ namespace Automacao.Core.Asc
             {
 
 
-                if (!this.Autenticad)
+                if (!_authenticated)
                     Autenticar();
-                this.Autenticad = false;
+                _authenticated = false;
                 bs.UseCredentials = true;
                 bs.EncodingTexto = "ISO-8859-1";
-                bs.Credentials = new System.Net.NetworkCredential(this.User, this.Pass);
+                bs.Credentials = new System.Net.NetworkCredential(_user, _user);
 
                 bs.IsXMLPost = true;
                 bs.XmlToPost = GetXmlQyeryComplementos(oID);
@@ -364,8 +379,8 @@ namespace Automacao.Core.Asc
             bs.UseCredentials = true;
             string crmRPCToken = "";
             string timestamp = "";
-            bs.Credentials = new System.Net.NetworkCredential(this.User, this.Pass);
-            if (!this.Autenticad)
+            bs.Credentials = new System.Net.NetworkCredential(_user, _password);
+            if (!_authenticated)
                 Autenticar();
 
             var pgUserToWork = bs.Get("http://dynamics.caixaseguros.intranet:5555/CRMCAD/_grid/cmds/dlg_queueitemworkon.aspx?iObjType=2029&iTotal=1");
@@ -401,8 +416,8 @@ namespace Automacao.Core.Asc
             bs.UseCredentials = true;
             string crmRPCToken = "";
             string timestamp = "";
-            bs.Credentials = new System.Net.NetworkCredential(this.User, this.Pass);
-            if (!this.Autenticad)
+            bs.Credentials = new System.Net.NetworkCredential(_user, _password);
+            if (!_authenticated)
                 Autenticar();
 
             var pgUserToWork = bs.Get("http://dynamics.caixaseguros.intranet:5555/CRMCAD/_grid/cmds/dlg_queueitemworkon.aspx?iObjType=2029&iTotal=1");
@@ -439,8 +454,8 @@ namespace Automacao.Core.Asc
         public Ocorrencia GetOcorrenciaSinistroOnline(string oid)
         {
             bs.UseCredentials = true;
-            bs.Credentials = new System.Net.NetworkCredential(this.User, this.Pass);
-            //  if (!this.Autenticad)
+            bs.Credentials = new System.Net.NetworkCredential(_user, _password);
+            //  if (!_authenticated)
             Autenticar();
             Ocorrencia a = new Ocorrencia();
             a.OID = oid;
@@ -621,7 +636,7 @@ namespace Automacao.Core.Asc
                 a.NumeroOcorrencia = incidente.Ticketnumber;
                 a.CPFCNPJ = incidente.Gcs_cpfcnpjcliente;
 
-                
+
             }
             catch (Exception ex)
             {
@@ -657,7 +672,7 @@ namespace Automacao.Core.Asc
             try
             {
 
-                if (!this.Autenticad)
+                if (!_authenticated)
                     Autenticar();
                 bs.IsXMLPost = true;
                 bs.EncodingTexto = "utf-8";
@@ -701,7 +716,7 @@ namespace Automacao.Core.Asc
             try
             {
 
-                if (!this.Autenticad)
+                if (!_authenticated)
                     Autenticar();
                 bs.IsXMLPost = true;
                 bs.EncodingTexto = "utf-8";
@@ -1141,7 +1156,7 @@ namespace Automacao.Core.Asc
         /// <returns></returns>
         public async Task<HtmlDocument> GetHtmlDocument()
         {
-            if (!this.Autenticad)
+            if (!_authenticated)
                 Autenticar();
 
             var url = "http://dynamics.caixaseguros.intranet:5555/CRMCAD/AppWebServices/AppGridWebService.ashx?operation=Refresh";
@@ -1153,18 +1168,15 @@ namespace Automacao.Core.Asc
             return htmlDocument;
         }
 
-        public async Task GetIframe()
+        public void GetIframe()
         {
-            if (!this.Autenticad)
+            if (!_authenticated)
                 Autenticar();
 
-            var url = "http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx";
-            var httpClient = new HttpClient();
-            var html = await httpClient.GetStringAsync(url);
-            var htmlDocument = new HtmlDocument();
-            htmlDocument.LoadHtml(html);
+            bs.UseCredentials = true;
+            bs.Credentials = new System.Net.NetworkCredential(_user, _password);
 
-            HtmlDocument doc = new HtmlDocument();
+            HtmlDocument doc = bs.GetHtmlDocument(_baseurl);
             HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//iframe[@src]");
 
             foreach (var node in nodes)
@@ -1183,151 +1195,64 @@ namespace Automacao.Core.Asc
         /// <returns></returns>
         public List<Ocorrencia> GetOcorrencias(bool filterComunicado = false, bool comANexos = false, bool somenteComunicado = false)
         {
-            if (!this.Autenticad)
-                Autenticar();
-            List<Ocorrencia> ocorrencias = new List<Ocorrencia>();
-            bs.IsXMLPost = true;
-            bs.EncodingTexto = "utf-8";
-            int contaPaginas = 1;
-            var temOcorrenciaDisponivel = true;
-            //  while (temOcorrenciaDisponivel)
-            //  {
-            bs.EncodingTexto = "utf-8";
-            bs.XmlToPost = GetXmlQyery(contaPaginas, 500);
-            bool temALgum = false;
-            var xmlData = bs.PostJs("http://dynamics.caixaseguros.intranet:5555/CRMCAD/AppWebServices/AppGridWebService.ashx?operation=Refresh");
-            var htmlData = xmlData
-                .Replace("<tr", Environment.NewLine + "<tr")
-                .Replace("</tr>", Environment.NewLine + "</tr>")
-                .Replace("<td", Environment.NewLine + "<td")
-                .Replace("</td>", Environment.NewLine + "</td>")
-                .Replace("<SPAN", Environment.NewLine + "<SPAN")
-                .Replace("</SPAN>", Environment.NewLine + "</SPAN>");
-            var linhas = htmlData.ToLines();
-            for (int i = 0; i < linhas.Count; i++)
+            try
             {
-                var l = linhas[i];
-                if (l.ToLower().Contains("class=\"ms-crm-list-row\" oid="))
+                if (!_authenticated)
+                    Autenticar();
+
+                DateTime outDaCriacao;
+                DateTime outPrevisaoConclusao;
+
+                bs.IsXMLPost = true;
+                bs.EncodingTexto = "utf-8";
+                bs.XmlToPost = GetRequestPayLoad(1, 500);
+
+                var xmlData = bs.PostJs("http://dynamics.caixaseguros.intranet:5555/CRMCAD/AppWebServices/AppGridWebService.ashx?operation=Refresh");
+
+                var doc = new HtmlDocument();
+                doc.LoadHtml(xmlData);
+               
+
+                var dadosTabela = doc.DocumentNode.SelectSingleNode("//table[@class='ms-crm-List-Data']")
+                    .Descendants("tr")
+                    .Skip(1)
+                    .Where(tr => tr.Elements("td").Count() > 1)
+                    .Select(tr => new {
+                        oid = tr.ChildAttributes("oid").FirstOrDefault().Value,
+                        queueitemid = tr.ChildAttributes("queueitemid").FirstOrDefault().Value,
+                        oType = tr.ChildAttributes("otype").FirstOrDefault().Value,
+                        oTypeName = tr.ChildAttributes("otypename").FirstOrDefault().Value,
+                        dados = tr.Elements("td").Select(td => td.InnerText.Trim()).ToList() }).ToList();
+
+                List<Ocorrencia> ocorrencias = new List<Ocorrencia>();
+                foreach (var item in dadosTabela)
                 {
-                    temALgum = true;
-                    List<string> bloco = new List<string>();
-                    var final = "</tr>";
-                    var texto = "";
-                    int contador = 0;
-                    while (texto != final)
+                    ocorrencias.Add(new Ocorrencia
                     {
-                        var linha = linhas[i + contador];
-                        bloco.Add(linha);
-                        contador++;
-                        if (linha.Contains(final))
-                            texto = final;
-                    }
-                    LinhaGridWebService objLinha = ParseLinha(bloco);
-                    if (objLinha.Status == "FalhaInterna")
-                    {
-                        continue;
-                    }
-                    var o = new Ocorrencia();
-                    o.OID = objLinha.OID;
-                    o.QueueItemID = objLinha.QueueItemID;
-                    o.Titulo = objLinha.Titulo;
-                    o.ReferenteA = objLinha.ReferenteA;
-                    o.NumeroOcorrencia = objLinha.NumeroOcorrencia;
-                    o.DataPrevistaConclusao = objLinha.DataPrevistaConclusao;
-                    o.DataCriacao = objLinha.DataCriacao;
-                    o.CanalEntrada = objLinha.CanalEntrada;
-                    o.CPFCNPJ = objLinha.CPFCNPJ;
-                    o.NomeCliente = objLinha.NomeCliente;
-                    o.Fila = objLinha.Fila;
-                    o.Status = objLinha.Status;
-
-                    //evita carga de objetos já carregados
-                    if (ocorrencias.Any(oc => oc.OID == o.OID))
-                        continue;
-                    if (this.IgnoredIds != null)
-                        if (this.IgnoredIds.Any(x => x == o.OID))
-                            continue;
-
-
-
-                    var objReferenteA = VerificarReferenteA(o.ReferenteA);
-                    if (o.CanalEntrada.Contains("Serviços Online"))
-                    {
-                        objReferenteA = ReferenteAEnum.SinistroOnline;
-                        o.EnunReferenteA = objReferenteA;
-                    }
-                    o.EnunReferenteA = objReferenteA;
-                    if (somenteComunicado)
-                    {
-                        switch (objReferenteA)
-                        {
-                            case ReferenteAEnum.Comunicado: break;
-                            //case ReferenteAEnum.Reanalise: continue;                                    
-                            case ReferenteAEnum.Andamento: break;
-                            case ReferenteAEnum.Indenizacao: break;
-                            case ReferenteAEnum.SinistroOnline: break;
-                            case ReferenteAEnum.AlteracaoApoliceEspecifica: break;
-                            default: continue;
-
-                        }
-                    }
-
-                    o.Anexos = new List<Anexo>();
-
-                    if (string.IsNullOrEmpty(o.NumeroOcorrencia))
-                    {
-                        continue;
-                    }
-
-                    //if (objReferenteA == ReferenteAEnum.Andamento || objReferenteA == ReferenteAEnum.Indenizacao)
-                    //{
-                    //    o.EnunReferenteA = objReferenteA;
-                    //}
-
-                    if (!string.IsNullOrEmpty(o.OID))
-                        ocorrencias.Add(o);
-
-
+                        OID = item.oid,
+                        QueueItemID = item.queueitemid,
+                        Tipo = item.oTypeName,
+                        TipoId = item.oType,
+                        Titulo = item.dados[2],
+                        Grupo = item.dados[3],
+                        Cota = item.dados[4],
+                        NomeCliente = item.dados[5],
+                        DataPrevistaConclusao = DateTime.TryParse(item.dados[6], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outDaCriacao) ? outDaCriacao : new DateTime?(),
+                        DataCriacao = DateTime.TryParse(item.dados[7], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outPrevisaoConclusao) ? outPrevisaoConclusao : new DateTime?(),
+                        ReferenteA = item.dados[8],
+                        CanalEntrada = item.dados[9],
+                        CPFCNPJ = item.dados[10],
+                        NumeroOcorrencia = item.dados[11]
+                    });
                 }
+
+                return ocorrencias;
             }
-            temOcorrenciaDisponivel = temALgum;
-            contaPaginas++;
-            //  }
-
-            if (comANexos)
+            catch (Exception ex)
             {
-                foreach (var o in ocorrencias)
-                {
-                    if (o.EnunReferenteA == ReferenteAEnum.SinistroOnline)
-                    {
-                        o.SinistroOnline = true;
-                        var aux = GetOcorrenciaSinistroOnline(o.OID);
-                        o.Anexos = aux.Anexos;
-                        foreach (var a in o.Anexos)
-                        {
-                            a.Origem = o.EnunReferenteA.ToString();
-                        }
-                    }
-                    if (o.EnunReferenteA == ReferenteAEnum.Comunicado)
-                    {
-                        o.Anexos = GetAnexos(o.OID, true);
-                        foreach (var a in o.Anexos)
-                        {
-                            a.Origem = o.EnunReferenteA.ToString();
-                        }
-                    }
-
-                    if (string.IsNullOrEmpty(o.NumeroOcorrencia))
-                    {
-                        var anexoComASC = o.Anexos.FirstOrDefault(s => s.NU_ASC != "");
-                        if (anexoComASC != null)
-                            o.NumeroOcorrencia = anexoComASC.NU_ASC;
-                    }
-                }
+                throw ex;
             }
 
-
-            return ocorrencias;
 
         }
 
@@ -1546,6 +1471,71 @@ namespace Automacao.Core.Asc
             xml += "<column width=\"0\" isHidden=\"true\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Item&#32;da&#32;Fila\" fieldname=\"queueitemid\" entityname=\"queueitem\">queueitemid</column>";
             xml += "</columns>";
             xml += "</grid>   ";
+
+            return xml;
+        }
+
+        public string GetRequestPayLoad(int page, int maxPerPage)
+        {
+            string xml = "<grid>";
+            xml += "<sortColumns>gcs_data_prevista_conclusao_tarefa:1;enteredon:1</sortColumns>";
+            xml += $"<pageNum>{page}</pageNum>";
+            xml += $"<recsPerPage>{maxPerPage}</recsPerPage>";
+            xml += "<dataProvider>Microsoft.Crm.Application.Platform.Grid.GridDataProviderQueryBuilder</dataProvider>";
+            xml += "<uiProvider>Microsoft.Crm.Application.Controls.GridUIProvider</uiProvider>";
+            xml += "<cols />";
+            xml += "<max>-1</max>";
+            xml += "<refreshAsync>True</refreshAsync>";
+            xml += "<pagingCookie />";
+            xml += "<enableMultiSort>true</enableMultiSort>";
+            xml += "<enablePagingWhenOnePage>true</enablePagingWhenOnePage>";
+            xml += "<refreshCalledFromRefreshButton>1</refreshCalledFromRefreshButton>";
+            xml += "<returntotalrecordcount>true</returntotalrecordcount>";
+            xml += "<getParameters>getFetchXmlForFilters</getParameters>";
+            xml += "<parameters>";
+            xml += "<viewid>{63B289DD-A39C-E411-8410-00155D01C830}</viewid>";
+            xml += "<RenderAsync>0</RenderAsync>";
+            xml += "<LoadOnDemand>0</LoadOnDemand>";
+            xml += "<autorefresh>1</autorefresh>";
+            xml += "<isGridFilteringEnabled>1</isGridFilteringEnabled>";
+            xml += "<viewtype>1039</viewtype>";
+            xml += $"<RecordsPerPage>{maxPerPage}</RecordsPerPage>";
+            xml += "<viewTitle>ITENS PARA TRABALHAR - CAIXA CONSÓRCIOS</viewTitle>";
+            xml += "<layoutXml>&lt;grid name=\"resultset\" object=\"2029\" jump=\"title\" select=\"1\" preview=\"1\" icon=\"1\"&gt;&lt;row name=\"result\" id=\"objectid\" multiobjectidfield=\"objecttypecode\"&gt;&lt;cell name=\"queueitemid\" ishidden=\"1\" width=\"150\" /&gt;&lt;cell name=\"title\" width=\"200\" /&gt;&lt;cell name=\"a_4317a47620834b68a2f9e7ca23b46f1d.gcs_grupotarefa\" width=\"50\" disableSorting=\"1\" relatedentityname=\"task\" relatedentityattr=\"activityid\" primaryentityattr=\"objectid\" relationshipid=\"{ada7188d-db0c-4cbb-9312-bdd5302a0e24}\" relationshipname=\"Task_QueueItem\" /&gt;&lt;cell name=\"a_4317a47620834b68a2f9e7ca23b46f1d.gcs_cotatarefa\" width=\"50\" disableSorting=\"1\" relatedentityname=\"task\" relatedentityattr=\"activityid\" primaryentityattr=\"objectid\" relationshipid=\"{ada7188d-db0c-4cbb-9312-bdd5302a0e24}\" relationshipname=\"Task_QueueItem\" /&gt;&lt;cell name=\"a_4317a47620834b68a2f9e7ca23b46f1d.gcs_nomedocliente\" width=\"200\" disableSorting=\"1\" relatedentityname=\"task\" relatedentityattr=\"activityid\" primaryentityattr=\"objectid\" relationshipid=\"{ada7188d-db0c-4cbb-9312-bdd5302a0e24}\" relationshipname=\"Task_QueueItem\" /&gt;&lt;cell name=\"gcs_data_prevista_conclusao_tarefa\" width=\"100\" /&gt;&lt;cell name=\"enteredon\" width=\"100\" /&gt;&lt;cell name=\"a_4317a47620834b68a2f9e7ca23b46f1d.regardingobjectid\" width=\"300\" disableSorting=\"1\" relatedentityname=\"task\" relatedentityattr=\"activityid\" primaryentityattr=\"objectid\" relationshipid=\"{ada7188d-db0c-4cbb-9312-bdd5302a0e24}\" relationshipname=\"Task_QueueItem\" /&gt;&lt;cell name=\"a_4317a47620834b68a2f9e7ca23b46f1d.gcs_canaldeentrada\" width=\"125\" disableSorting=\"1\" relatedentityname=\"task\" relatedentityattr=\"activityid\" primaryentityattr=\"objectid\" relationshipid=\"{ada7188d-db0c-4cbb-9312-bdd5302a0e24}\" relationshipname=\"Task_QueueItem\" /&gt;&lt;cell name=\"gcs_cpfcnpjdocliente\" width=\"100\" /&gt;&lt;cell name=\"gcs_numerodaocorrencia\" width=\"150\" /&gt;&lt;/row&gt;&lt;/grid&gt;</layoutXml>";
+            xml += "<otc>2029</otc>";
+            xml += "<otn>queueitem</otn>";
+            xml += "<entitydisplayname>Item da Fila</entitydisplayname>";
+            xml += "<titleformat>{0} {1}</titleformat>";
+            xml += "<entitypluraldisplayname>Itens da Fila</entitypluraldisplayname>";
+            xml += "<expandable>1</expandable>";
+            xml += "<showjumpbar>1</showjumpbar>";
+            xml += "<maxrowsbeforescroll>12</maxrowsbeforescroll>";
+            xml += "<tabindex>0</tabindex>";
+            xml += "<refreshasynchronous>1</refreshasynchronous>";
+            xml += "<subgridAutoExpand>0</subgridAutoExpand>";
+            xml += "<relName />";
+            xml += "<roleOrd>-1</roleOrd>";
+            xml += "<relationshipType>0</relationshipType>";
+            xml += "<ribbonContext>SubGridStandard</ribbonContext>";
+            xml += "<GridType>SubGrid</GridType>";
+            xml += "<isWorkflowSupported>true</isWorkflowSupported>";
+            xml += "<LayoutStyle>GridList</LayoutStyle>";
+            xml += "<enableFilters />";
+            xml += "</parameters>";
+            xml += "<columns>";
+            xml += "<column width=\"200\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"true\" label=\"Título\" fieldname=\"title\" entityname=\"queueitem\" renderertype=\"Crm.PrimaryField\">title</column>";
+            xml += "<column width=\"50\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Grupo (Objeto)\" fieldname=\"gcs_grupotarefa\" entityname=\"task\" relationshipname=\"Task_QueueItem\">a_4317a47620834b68a2f9e7ca23b46f1d.gcs_grupotarefa</column>";
+            xml += "<column width=\"50\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Cota (Objeto)\" fieldname=\"gcs_cotatarefa\" entityname=\"task\" relationshipname=\"Task_QueueItem\">a_4317a47620834b68a2f9e7ca23b46f1d.gcs_cotatarefa</column>";
+            xml += "<column width=\"200\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Nome do Cliente (Objeto)\" fieldname=\"gcs_nomedocliente\" entityname=\"task\" relationshipname=\"Task_QueueItem\">a_4317a47620834b68a2f9e7ca23b46f1d.gcs_nomedocliente</column>";
+            xml += "<column width=\"100\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"true\" label=\"Data Prevista de Conclusão\" fieldname=\"gcs_data_prevista_conclusao_tarefa\" entityname=\"queueitem\">gcs_data_prevista_conclusao_tarefa</column>";
+            xml += "<column width=\"100\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"true\" label=\"Inserido na Fila\" fieldname=\"enteredon\" entityname=\"queueitem\">enteredon</column>";
+            xml += "<column width=\"300\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Referente a (Objeto)\" fieldname=\"regardingobjectid\" entityname=\"task\" relationshipname=\"Task_QueueItem\">a_4317a47620834b68a2f9e7ca23b46f1d.regardingobjectid</column>";
+            xml += "<column width=\"125\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Canal de Entrada (Objeto)\" fieldname=\"gcs_canaldeentrada\" entityname=\"task\" relationshipname=\"Task_QueueItem\">a_4317a47620834b68a2f9e7ca23b46f1d.gcs_canaldeentrada</column>";
+            xml += "<column width=\"100\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"true\" label=\"CPF/CNPJ do Cliente\" fieldname=\"gcs_cpfcnpjdocliente\" entityname=\"queueitem\">gcs_cpfcnpjdocliente</column>";
+            xml += "<column width=\"150\" isHidden=\"false\" isMetadataBound=\"true\" isSortable=\"true\" label=\"Número da Ocorrência\" fieldname=\"gcs_numerodaocorrencia\" entityname=\"queueitem\">gcs_numerodaocorrencia</column>";
+            xml += "<column width=\"0\" isHidden=\"true\" isMetadataBound=\"true\" isSortable=\"false\" label=\"Item da Fila\" fieldname=\"queueitemid\" entityname=\"queueitem\">queueitemid</column>";
+            xml += "</columns>";
+            xml += "</grid>";
 
             return xml;
         }

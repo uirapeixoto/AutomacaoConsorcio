@@ -13,16 +13,23 @@ namespace Automacao.Core.Helper
     public class BrowserSession : IDisposable
     {
         private bool _isPost;
+        private HttpWebResponse _response;
         private HtmlDocument _htmlDoc;
+        private bool _haveFileWord;
+        private bool _haveFileRTF;
+        private bool _haveFilePDF;
+        private bool _haveAttachment;
+
 
         #region Novos Atributos
-
+        public string newLocation { get; set; }
         public Dictionary<string, string> extraHeader;
 
         public List<string> toRemoveHeader;
 
         private CookieContainer _cookies;
 
+        public HttpWebResponse Response { get; set; }
         public bool IsXMLPost { get; set; }
 
         public string XmlToPost { get; set; }
@@ -40,6 +47,7 @@ namespace Automacao.Core.Helper
         public bool AutoRedirect { get; set; }
 
         public string FileName { get; set; }
+        public byte[] PdfArray { get; set; }
 
         public string LastContentType { get; set; }
         public string RTFData { get; private set; }
@@ -67,6 +75,13 @@ namespace Automacao.Core.Helper
             return _htmlDoc.DocumentNode.InnerHtml;
         }
 
+        public HtmlDocument GetHtmlDocument(string url)
+        {
+            _isPost = false;
+            _htmlDoc = CreateWebRequestObject().Load(url);
+            return _htmlDoc;
+        }
+
         /// <summary>
         /// Makes a HTTP POST request to the given URL
         /// </summary>
@@ -80,6 +95,10 @@ namespace Automacao.Core.Helper
         public BrowserSession()
         {
             _cookies = new CookieContainer();
+            _haveFileWord = false;
+            _haveFileRTF = false;
+            _haveFilePDF = false;
+            _haveAttachment = false;
         }
 
         /// <summary>
@@ -105,6 +124,70 @@ namespace Automacao.Core.Helper
         /// </summary>
         protected void OnAfterResponse(HttpWebRequest request, HttpWebResponse response)
         {
+            if (response.ContentType.Contains("text/javascript") || response.ContentType.Contains("text/xml") || response.ContentType.Contains("application/json") || response.ResponseUri.AbsolutePath.Contains("/ajax.php") || response.ContentType.Contains("application/vnd.ms-excel"))
+            {
+                string responseText = string.Empty;
+                WebHeaderCollection header = response.Headers;
+                var encoding = ASCIIEncoding.ASCII;
+                if (!string.IsNullOrEmpty(this.EncodingTexto))
+                    encoding = Encoding.GetEncoding(this.EncodingTexto);
+                using (var reader = new System.IO.StreamReader(response.GetResponseStream(), encoding))
+                {
+                    responseText = reader.ReadToEnd();
+                }
+                this.JavaScriptText = responseText;
+            }
+            /*
+                       
+             */
+            if (response.ContentType.ToLower().Contains("application/msword"))
+            {
+                _haveFileWord = true;
+            }
+
+            if (response.ContentType.ToLower().Contains("application/rtf"))
+            {
+                _haveFileRTF = true;
+            }
+            if (response.Headers[1].Contains("attachment") & !response.ResponseUri.AbsolutePath.Contains("print_data.aspx"))
+            {
+                _haveAttachment = true;
+
+            }
+            this.LastContentType = response.ContentType;
+            request.UserAgent = SettingsManager.GetSessionUserAgent();
+            request.AllowAutoRedirect = this.AutoRedirect;
+            WebHeaderCollection myWebHeaderCollection = request.Headers;
+            myWebHeaderCollection.Add("Accept-Language", SettingsManager.GetSessionAcceptLanguage());
+            myWebHeaderCollection.Add("AcceptCharset", SettingsManager.GetSessionAcceptCharset());
+            myWebHeaderCollection.Add("TransferEncoding", SettingsManager.GetSessionTransferEncoding());
+
+
+            if (response.StatusCode == HttpStatusCode.Redirect || response.StatusCode == HttpStatusCode.MovedPermanently)
+            {
+                // Do something...
+                string newUrl = response.Headers["Location"];
+                this.newLocation = newUrl;
+            }
+
+            if (extraHeader != null)
+            {
+                foreach (var kv in extraHeader)
+                {
+                    if (myWebHeaderCollection.Get(kv.Key) == null)
+                        myWebHeaderCollection.Add(kv.Key, kv.Value);
+                }
+            }
+            if (toRemoveHeader != null)
+            {
+                foreach (var r in toRemoveHeader)
+                {
+                    if (myWebHeaderCollection.Get(r) != null)
+                        myWebHeaderCollection.Remove(r);
+                }
+            }
+            request.Referer = lasUrl;
+            //request.KeepAlive = true;
             SaveCookiesFrom(response); // Save cookies for subsequent requests
         }
 
@@ -130,25 +213,72 @@ namespace Automacao.Core.Helper
                 AutoDetectEncoding = false,
                 OverrideEncoding = Encoding.GetEncoding(dsEnc)
             };
-
+                                                                          
             web.UseCookies = true;
             web.PreRequest = new HtmlWeb.PreRequestHandler(OnPreRequest);
             web.PostResponse = new HtmlWeb.PostResponseHandler(OnAfterResponse);
             web.PreHandleDocument = new HtmlWeb.PreHandleDocumentHandler(OnPreHandleDocument);
+            
             return web;
         }
 
         /// <summary>
-        /// Assembles the Post data and attaches to the request object
+        /// Prepara a requisição antes da solicitação
         /// </summary>
+        /// <param name="request"></param>
         private void AddPostDataTo(HttpWebRequest request)
         {
-            string payload = FormElements.AssemblePostPayload();
-            byte[] buff = Encoding.UTF8.GetBytes(payload.ToCharArray());
-            request.ContentLength = buff.Length;
-            request.ContentType = "application/x-www-form-urlencoded";
-            System.IO.Stream reqStream = request.GetRequestStream();
-            reqStream.Write(buff, 0, buff.Length);
+            request.UserAgent = SettingsManager.GetSessionUserAgent();
+            WebHeaderCollection myWebHeaderCollection = request.Headers;
+            myWebHeaderCollection.Add("Accept-Language", SettingsManager.GetSessionAcceptLanguage());
+            myWebHeaderCollection.Add("AcceptCharset", SettingsManager.GetSessionAcceptCharset());
+            myWebHeaderCollection.Add("TransferEncoding", SettingsManager.GetSessionTransferEncoding());
+            if (extraHeader != null)
+            {
+                foreach (var kv in extraHeader)
+                {
+                    if (myWebHeaderCollection.Get(kv.Key) == null)
+                        myWebHeaderCollection.Add(kv.Key, kv.Value);
+                }
+            }
+            if (toRemoveHeader != null)
+            {
+                foreach (var r in toRemoveHeader)
+                {
+                    if (myWebHeaderCollection.Get(r) != null)
+                        myWebHeaderCollection.Remove(r);
+                }
+            }
+            request.Referer = lasUrl;
+            request.AllowAutoRedirect = this.AutoRedirect;
+            //request.KeepAlive = true;
+            if (IsXMLPost)
+            {
+                string payload = XmlToPost;
+                byte[] buff = System.Text.Encoding.UTF8.GetBytes(payload);
+
+                request.ContentLength = buff.Length;
+                request.ContentType = "text/plain; charset=UTF-8";
+
+                System.IO.Stream reqStream = request.GetRequestStream();
+
+                reqStream.Write(buff, 0, buff.Length);
+
+            }
+            else
+            {
+                string payload = FormElements.AssemblePostPayload();
+                var enc = Encoding.GetEncoding("ISO-8859-1");
+
+                byte[] buff = enc.GetBytes(payload.ToCharArray());
+
+                request.ContentLength = buff.Length;
+                request.ContentType = "application/x-www-form-urlencoded";
+
+                System.IO.Stream reqStream = request.GetRequestStream();
+
+                reqStream.Write(buff, 0, buff.Length);
+            }
         }
 
         /// <summary>
@@ -192,12 +322,11 @@ namespace Automacao.Core.Helper
         {
             _isPost = true;
 
-            CreateWebRequestObject().Load(url, "POST");
-
-            if (string.IsNullOrEmpty(JavaScriptText))
+            var result = CreateWebRequestObject().Load(url, "POST");
+            if (string.IsNullOrEmpty(this.JavaScriptText))
                 return _htmlDoc.DocumentNode.InnerHtml;
 
-            return JavaScriptText;
+            return this.JavaScriptText;
         }
 
         /// <summary>
@@ -342,7 +471,7 @@ namespace Automacao.Core.Helper
         /// Retorna o documento html da pagina
         /// </summary>
         /// <returns></returns>
-        public async Task<HtmlDocument> GetHtmlDocument(string url)
+        public async Task<HtmlDocument> GetHtmlDocumentAsync(string url)
         {
             var httpClient = new HttpClient();
             var html = await httpClient.GetStringAsync(url);

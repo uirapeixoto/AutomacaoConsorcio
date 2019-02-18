@@ -11,16 +11,27 @@ namespace Automacao.Core.Asc
 {
     public class AscPage : IDisposable
     {
-        public bool Authenticated { get; set; }
+
+        private string _baseurl;
+        private bool _authenticated;
+
+        private BrowserSession _bs;
+        private Uri _uri;
+
+        public bool Authenticated { get { return _authenticated; } set { _authenticated = value; } }
         public string User { get; private set; }
         public string Pass { get; private set; }
 
-        private BrowserSession bs = new BrowserSession();
-
         public AscPage(string user, string pass)
         {
+            _baseurl = "http://dynamics.caixaseguros.intranet:5555/CRMCAD/";
+            _authenticated = false;
+
             User = user;
             Pass = pass;
+
+            _uri = new Uri($@"{_baseurl}");
+            _bs = new BrowserSession();
 
             WebProxy p = new WebProxy("localhost", 8888);
             WebRequest.DefaultWebProxy = p;
@@ -34,9 +45,9 @@ namespace Automacao.Core.Asc
             try
             {
                 Authenticated = false;
-                bs.UseCredentials = true;
-                bs.Credentials = new NetworkCredential(User, Pass);
-                var loged = bs.Get("http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx");
+                _bs.UseCredentials = true;
+                _bs.Credentials = new NetworkCredential(User, Pass);
+                var loged = _bs.Get("http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx");
                 if (loged.Contains("Importante:"))
                     Authenticated = true;
                 return Authenticated;
@@ -51,20 +62,20 @@ namespace Automacao.Core.Asc
         {
             try
             {
-                    //initial "Login-procedure"
-                    bs.UseCredentials = true;
-                    bs.Credentials = new NetworkCredential(User, Pass);
-                    var loged = bs.Get2("http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx");
+                //initial "Login-procedure"
+                _bs.UseCredentials = true;
+                _bs.Credentials = new NetworkCredential(User, Pass);
+                var loged = _bs.Get2("http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx");
 
-                    if (loged.Contains("Importante:"))
-                        Authenticated = true;
-             
+                if (loged.Contains("Importante:"))
+                    Authenticated = true;
+
             }
             catch (Exception e)
             {
                 Authenticated = false;
             }
-            
+
         }
 
         public string GetPage(string url)
@@ -74,7 +85,7 @@ namespace Automacao.Core.Asc
                 if (!Authenticated)
                     Autenticar();
 
-                return bs.Get(url);
+                return _bs.Get(url);
             }
             catch (Exception e)
             {
@@ -91,22 +102,20 @@ namespace Automacao.Core.Asc
         {
             using (var asc = new ASCSession(User, Pass))
             {
-                List<LinhaGridWebService> lista = new List<LinhaGridWebService>();
-                var oid = string.Empty;
-                var ocorencias = asc.GetOcorrencias();
-                Authenticated = asc.Autenticad;
-                return null;
+                var ocorrencias = asc.GetOcorrencias();
+                _authenticated = asc.Autenticated;
+
+                return ocorrencias;
             }
         }
 
-        public async Task<string> GetIframe(string url)
+        public bool GetIframe(string url)
         {
             try
             {
                 var asc = new ASCSession(User, Pass);
-
-                 await asc.GetIframe();
-                return "";
+                asc.GetIframe();
+                return true;
             }
             catch (Exception e)
             {
@@ -121,7 +130,7 @@ namespace Automacao.Core.Asc
                 return await asc.GetHtmlDocument();
             }
         }
-        
+
         public void Dispose()
         {
         }
