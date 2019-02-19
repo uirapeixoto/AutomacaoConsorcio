@@ -1238,7 +1238,7 @@ namespace Automacao.Core.Asc
                         Cota = item.dados[4],
                         NomeCliente = item.dados[5],
                         DataPrevistaConclusao = DateTime.TryParse(item.dados[6], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outDaCriacao) ? outDaCriacao : new DateTime?(),
-                        DataCriacao = DateTime.TryParse(item.dados[7], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outPrevisaoConclusao) ? outPrevisaoConclusao : new DateTime?(),
+                        DataCriacao = DateTime.TryParse(item.dados[7], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outPrevisaoConclusao) ? outPrevisaoConclusao : new Nullable<DateTime>(),
                         ReferenteA = item.dados[8],
                         CanalEntrada = item.dados[9],
                         CPFCNPJ = item.dados[10],

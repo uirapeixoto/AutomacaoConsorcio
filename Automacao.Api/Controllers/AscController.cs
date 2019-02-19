@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 using Automacao.Api.ViewModel;
 using Automacao.Core.Asc;
@@ -18,7 +23,6 @@ namespace Automacao.Api.Controllers
         [HttpPost("[action]")]
         public ResponseViewModel<UsuarioLoginViewModel> Logar([FromBody] UsuarioLoginViewModel usuario)
         {
-
             try
             {
                 using (var robo = new AscPage(usuario.Nome, usuario.Senha))
@@ -49,11 +53,8 @@ namespace Automacao.Api.Controllers
                 return new ResponseViewModel<UsuarioLoginViewModel>
                 {
                     Message = $@"Erro: {e}"
-                }
-                    ;
+                };
             }
-
-
         }
 
         // GET: api/asc
@@ -62,14 +63,18 @@ namespace Automacao.Api.Controllers
         {
             try
             {
+                var rnd = new Random();
                 var page = new AscPage(usuario.Nome, usuario.Senha);
                 var ocorrencias = page.GetOcorrencias();
+
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
                 if (page.Authenticated)
                 {
                     return new ResponseViewModel<Ocorrencia>
                     {
-                        Message = $@"HttpStatusCod: {System.Net.HttpStatusCode.OK}",
+                        Message = $@"HttpStatusCod: {HttpStatusCode.OK}",
+                        Anexo = page.GetExcelFileName(),
                         Data = ocorrencias
                     };
                 }
@@ -91,63 +96,19 @@ namespace Automacao.Api.Controllers
                 };
             }
         }
-        // GET: api/asc/gethtml
-        [HttpPost("[action]")]
-        public ResponseViewModel<string> GetHtml([FromBody] UsuarioLoginViewModel usuario)
+
+        [HttpGet("[action]")]
+        public HttpResponseMessage Generate(string fileName)
         {
-            try
-            {
-                using (var bot = new AscPage(usuario.Nome, usuario.Senha))
-                {
-                    var url = "http://dynamics.caixaseguros.intranet:5555/CRMCAD/AppWebServices/AppGridWebService.ashx?operation=Refresh";
-                    var html = bot.GetPage(url);
-                    var rs = new ResponseViewModel<string>
-                    {
-                        Message = $@"Message: {System.Net.HttpStatusCode.OK}",
-                        Data = new List<string> { html }
-                    };
-                    return rs;
-                }
-            }
-            catch (Exception e)
-            {
-                return new ResponseViewModel<string>
-                {
-                    Message = $@"Erro: {e.Message }",
-                    Data = new List<string>()
-                };
-            }
-
-        }
-
-
-        // GET: api/asc/gethtml
-        [HttpPost("[action]")]
-        public ResponseViewModel<string> GetFrame([FromBody] UsuarioLoginViewModel usuario)
-        {
-            try
-            {
-                using (var page = new AscPage(usuario.Nome, usuario.Senha))
-                {
-                    var url = "http://dynamics.caixaseguros.intranet:5555/CRMCAD/AppWebServices/AppGridWebService.ashx?operation=Refresh";
-                    var html = page.GetIframe(url);
-                    var rs = new ResponseViewModel<string>
-                    {
-                        Message = $@"Message: {System.Net.HttpStatusCode.OK}",
-                        Data = new List<string>()
-                    };
-                    return rs;
-                }
-            }
-            catch (Exception e)
-            {
-                return new ResponseViewModel<string>
-                {
-                    Message = $@"Erro: {e.Message }",
-                    Data = new List<string>()
-                };
-            }
-
+            var path = $"~/Content/{fileName}";
+            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+            var stream = new FileStream(path, FileMode.Open);
+            result.Content = new StreamContent(stream);
+            result.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment");
+            result.Content.Headers.ContentDisposition.FileName = Path.GetFileName(path);
+            result.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            result.Content.Headers.ContentLength = stream.Length;
+            return result;
         }
     }
 }

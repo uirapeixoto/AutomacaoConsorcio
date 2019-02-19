@@ -1,8 +1,14 @@
 ﻿using Automacao.Core.Helper;
+using Automacao.Core.Helper.Library;
 using Automacao.Domain.Model.ASC;
 using HtmlAgilityPack;
+using OfficeOpenXml;
+using OfficeOpenXml.Table;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +23,7 @@ namespace Automacao.Core.Asc
 
         private BrowserSession _bs;
         private Uri _uri;
+        private IEnumerable<Ocorrencia> _ocorrencias;
 
         public bool Authenticated { get { return _authenticated; } set { _authenticated = value; } }
         public string User { get; private set; }
@@ -32,10 +39,12 @@ namespace Automacao.Core.Asc
 
             _uri = new Uri($@"{_baseurl}");
             _bs = new BrowserSession();
+            _ocorrencias = new List<Ocorrencia>();
 
             WebProxy p = new WebProxy("localhost", 8888);
             WebRequest.DefaultWebProxy = p;
         }
+
         /// <summary>
         /// Realiza a autenticação no sistema
         /// </summary>
@@ -56,26 +65,6 @@ namespace Automacao.Core.Asc
             {
                 throw new Exception("Falha ao tentar autenticar usuário " + User + ". Message:" + ex.Message + ".  StackTrace: " + ex.StackTrace);
             }
-        }
-
-        public void Autenticar2()
-        {
-            try
-            {
-                //initial "Login-procedure"
-                _bs.UseCredentials = true;
-                _bs.Credentials = new NetworkCredential(User, Pass);
-                var loged = _bs.Get2("http://dynamics.caixaseguros.intranet:5555/CRMCAD/main.aspx");
-
-                if (loged.Contains("Importante:"))
-                    Authenticated = true;
-
-            }
-            catch (Exception e)
-            {
-                Authenticated = false;
-            }
-
         }
 
         public string GetPage(string url)
@@ -104,31 +93,68 @@ namespace Automacao.Core.Asc
             {
                 var ocorrencias = asc.GetOcorrencias();
                 _authenticated = asc.Autenticated;
-
+                _ocorrencias = ocorrencias;
                 return ocorrencias;
             }
         }
 
-        public bool GetIframe(string url)
+        public string ExportOcorrencias()
         {
             try
             {
-                var asc = new ASCSession(User, Pass);
-                asc.GetIframe();
-                return true;
+                var rnd = new Random();
+                var nomeArquivo = $"DadosASC_Ocorrencias_{DateTime.Now.ToString("yyyyMMddmmss")}{rnd.Next(100)}.xlsx";
+                string excelFile = Path.Combine($"Content/{nomeArquivo}");
+
+                ExcelPackage pck = new ExcelPackage();
+                if (_ocorrencias == null)
+                {
+                    return "Não foi possível exportar esta lista";
+                }
+
+                var listaToExport = (from c in _ocorrencias
+                                     select new
+                                     {
+                                         c.SinistroOnline,
+                                         c.Fila,
+                                         ASC = c.NumeroOcorrencia,
+                                         c.Titulo,
+                                         c.ReferenteA,
+                                         c.Status,
+                                         c.StatusAtividade,
+                                         c.CanalEntrada,
+                                         c.CPFCNPJ,
+                                         c.NomeCliente,
+                                         DataCriacao = c.DataCriacao,
+                                         DataPrevistaConclusao = c.DataPrevistaConclusao,
+                                         AnexoAlteradoPor = c.Anexos != null ? (c.Anexos.Count > 0 ? c.Anexos.FirstOrDefault().AlteradoPor : "") : "",
+                                         LinkArquivoComunicado = c.Anexos != null ? (c.Anexos.Count > 0 ? c.Anexos.FirstOrDefault().Url : "") : "",
+                                         oID = c.OID,
+                                     }).ToList();
+
+                var wsDt = pck.Workbook.Worksheets.Add("Dados");
+                wsDt.Cells["A1"].LoadFromCollection(listaToExport, true, TableStyles.Medium9);
+                wsDt.Cells[wsDt.Dimension.Address].AutoFitColumns();
+                var fi = new FileInfo(excelFile);
+                if (fi.Exists)
+                    fi.Delete();
+                pck.SaveAs(fi);
+                ProcessStartInfo psi = new ProcessStartInfo(excelFile);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
+
+                return excelFile;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                throw e;
+                return $"Falha interna, tente novamente.  {ex.Message}. InnerException.Message: {ex.InnerException.Message}";
             }
         }
 
-        public async Task<HtmlDocument> GetHtml()
+        public string GetExcelFileName()
         {
-            using (var asc = new ASCSession(User, Pass))
-            {
-                return await asc.GetHtmlDocument();
-            }
+            var excel = new ExcelExport<Ocorrencia>(_ocorrencias);
+            return excel.Gerar();
         }
 
         public void Dispose()
