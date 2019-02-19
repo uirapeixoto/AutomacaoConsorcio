@@ -55,7 +55,7 @@ namespace Automacao.Core.Helper.Library
             {
                 //denifindo o nome do arquivo
                 var rnd = new Random();
-                var nomeArquivo = $"DadosASC_Ocorrencias_{DateTime.Now.ToString("yyyyMMddmmss")}{rnd.Next(100)}.xlsx";
+                var nomeArquivo = $"DadosASC_Ocorrencias_{DateTime.Now.ToString("yyyyMMddhhmmss")}{rnd.Next(100)}.xlsx";
                 string excelFile = Path.Combine($"Content/{nomeArquivo}");
 
                 using (ExcelPackage pck = new ExcelPackage())
@@ -68,7 +68,7 @@ namespace Automacao.Core.Helper.Library
                         fi.Delete();
                     pck.SaveAs(fi);
 
-                    return excelFile;
+                    return nomeArquivo;
                 }
             }
             catch (Exception e)

@@ -1,5 +1,6 @@
 ﻿using Automacao.Core.Helper;
 using Automacao.Core.Helper.Library;
+using Automacao.Core.PageObjectModel;
 using Automacao.Domain.Model.ASC;
 using HtmlAgilityPack;
 using OfficeOpenXml;
@@ -98,62 +99,22 @@ namespace Automacao.Core.Asc
             }
         }
 
-        public string ExportOcorrencias()
-        {
-            try
-            {
-                var rnd = new Random();
-                var nomeArquivo = $"DadosASC_Ocorrencias_{DateTime.Now.ToString("yyyyMMddmmss")}{rnd.Next(100)}.xlsx";
-                string excelFile = Path.Combine($"Content/{nomeArquivo}");
-
-                ExcelPackage pck = new ExcelPackage();
-                if (_ocorrencias == null)
-                {
-                    return "Não foi possível exportar esta lista";
-                }
-
-                var listaToExport = (from c in _ocorrencias
-                                     select new
-                                     {
-                                         c.SinistroOnline,
-                                         c.Fila,
-                                         ASC = c.NumeroOcorrencia,
-                                         c.Titulo,
-                                         c.ReferenteA,
-                                         c.Status,
-                                         c.StatusAtividade,
-                                         c.CanalEntrada,
-                                         c.CPFCNPJ,
-                                         c.NomeCliente,
-                                         DataCriacao = c.DataCriacao,
-                                         DataPrevistaConclusao = c.DataPrevistaConclusao,
-                                         AnexoAlteradoPor = c.Anexos != null ? (c.Anexos.Count > 0 ? c.Anexos.FirstOrDefault().AlteradoPor : "") : "",
-                                         LinkArquivoComunicado = c.Anexos != null ? (c.Anexos.Count > 0 ? c.Anexos.FirstOrDefault().Url : "") : "",
-                                         oID = c.OID,
-                                     }).ToList();
-
-                var wsDt = pck.Workbook.Worksheets.Add("Dados");
-                wsDt.Cells["A1"].LoadFromCollection(listaToExport, true, TableStyles.Medium9);
-                wsDt.Cells[wsDt.Dimension.Address].AutoFitColumns();
-                var fi = new FileInfo(excelFile);
-                if (fi.Exists)
-                    fi.Delete();
-                pck.SaveAs(fi);
-                ProcessStartInfo psi = new ProcessStartInfo(excelFile);
-                psi.UseShellExecute = true;
-                Process.Start(psi);
-
-                return excelFile;
-            }
-            catch (Exception ex)
-            {
-                return $"Falha interna, tente novamente.  {ex.Message}. InnerException.Message: {ex.InnerException.Message}";
-            }
-        }
-
         public string GetExcelFileName()
         {
-            var excel = new ExcelExport<Ocorrencia>(_ocorrencias);
+            var data = _ocorrencias.Select(x => new OcorrenciaExcelObjectModel
+            {
+                Numero_Ocorrencia = x.NumeroOcorrencia, 
+                Assunto = x.ReferenteA, 
+                Cliente = x.NomeCliente, 
+                Tipo_Ocorrencia = x.Tipo,
+                Canal_Abertura = x.CanalEntrada,
+                E_mail = x.Email,
+                Grupo =x.Grupo,
+                Cota = x.Cota,
+                Data_Criacao = x.DataCriacaoStr,
+                Criado_Por = x.CriadoPor
+            });
+            var excel = new ExcelExport<OcorrenciaExcelObjectModel>(data);
             return excel.Gerar();
         }
 

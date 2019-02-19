@@ -1237,11 +1237,11 @@ namespace Automacao.Core.Asc
                         Grupo = item.dados[3],
                         Cota = item.dados[4],
                         NomeCliente = item.dados[5],
-                        DataPrevistaConclusao = DateTime.TryParse(item.dados[6], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outDaCriacao) ? outDaCriacao : new DateTime?(),
-                        DataCriacao = DateTime.TryParse(item.dados[7], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outPrevisaoConclusao) ? outPrevisaoConclusao : new Nullable<DateTime>(),
+                        DataPrevistaConclusaoStr = DateTime.TryParse(item.dados[6], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outDaCriacao) ? outDaCriacao.ToString("dd/MM/yyyy hh:mm") : "",
+                        DataCriacaoStr = DateTime.TryParse(item.dados[7], CultureInfo.CreateSpecificCulture("pt-BR"), DateTimeStyles.AssumeLocal, out outPrevisaoConclusao) ? outPrevisaoConclusao.ToString("dd/MM/yyyy hh:mm") : "",
                         ReferenteA = item.dados[8],
                         CanalEntrada = item.dados[9],
-                        CPFCNPJ = item.dados[10],
+                        CPFCNPJ = Util.FormatCPFCNPJ(item.dados[10]),
                         NumeroOcorrencia = item.dados[11]
                     });
                 }

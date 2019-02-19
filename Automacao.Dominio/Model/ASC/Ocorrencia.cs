@@ -13,11 +13,16 @@ namespace Automacao.Domain.Model.ASC
         public string TipoId { get; set; }
         public string Titulo { get; set; }
         public string Grupo { get; set; }
+        public string Email { get; set; }
         public string Cota { get; set; }
         public string NumeroOcorrencia { get; set; }
+        public string CriadoPor { get; set; }
         public DateTime? DataPrevistaConclusao { get; set; }
+        public string DataPrevistaConclusaoStr { get; set; }
         public DateTime? DataConclusao { get; set; }
+        public string DataConclusaoStr { get; set; }
         public DateTime? DataCriacao { get; set; }
+        public string DataCriacaoStr { get; set; }
         public string CanalEntrada { get; set; }
         public string ReferenteA { get; set; }
         public string CPFCNPJ { get; set; }
