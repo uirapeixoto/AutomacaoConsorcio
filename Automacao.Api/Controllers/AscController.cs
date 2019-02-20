@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Automacao.Api.ViewModel;
 using Automacao.Core.Asc;
+using Automacao.Core.PageObjectModel;
 using Automacao.Domain.Model.ASC;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Mvc;
@@ -59,19 +60,32 @@ namespace Automacao.Api.Controllers
 
         // GET: api/asc
         [HttpPost("[action]")]
-        public ResponseViewModel<Ocorrencia> Ocorrencias([FromBody] UsuarioLoginViewModel usuario)
+        public ResponseViewModel<OcorrenciaExcelObjectModel> Ocorrencias([FromBody] UsuarioLoginViewModel usuario)
         {
             try
             {
                 var rnd = new Random();
                 var page = new AscPage(usuario.Nome, usuario.Senha);
-                var ocorrencias = page.GetOcorrencias();
+
+                var ocorrencias = page.GetOcorrencias().Select(x => new OcorrenciaExcelObjectModel
+                {
+                    Numero_Ocorrencia = x.NumeroOcorrencia,
+                    Assunto = x.ReferenteA,
+                    Cliente = x.NomeCliente,
+                    Tipo_Ocorrencia = x.Tipo,
+                    Canal_Abertura = x.CanalEntrada,
+                    E_mail = x.Email,
+                    Grupo = x.Grupo,
+                    Cota = x.Cota,
+                    Data_Criacao = x.DataCriacaoStr,
+                    Criado_Por = x.CriadoPor
+                }).ToList();
 
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
                 if (page.Authenticated)
                 {
-                    return new ResponseViewModel<Ocorrencia>
+                    return new ResponseViewModel<OcorrenciaExcelObjectModel>
                     {
                         Message = $@"HttpStatusCod: {HttpStatusCode.OK}",
                         Anexo = page.GetExcelFileName(),
@@ -80,19 +94,19 @@ namespace Automacao.Api.Controllers
                 }
                 else
                 {
-                    return new ResponseViewModel<Ocorrencia>
+                    return new ResponseViewModel<OcorrenciaExcelObjectModel>
                     {
                         Message = $@"HttpStatusCod: {System.Net.HttpStatusCode.Unauthorized}",
-                        Data = new List<Ocorrencia>()
+                        Data = new List<OcorrenciaExcelObjectModel>()
                     };
                 }
             }
             catch (Exception e)
             {
-                return new ResponseViewModel<Ocorrencia>
+                return new ResponseViewModel<OcorrenciaExcelObjectModel>
                 {
                     Message = $@"Erro: {e.Message }",
-                    Data = new List<Ocorrencia>()
+                    Data = new List<OcorrenciaExcelObjectModel>()
                 };
             }
         }
