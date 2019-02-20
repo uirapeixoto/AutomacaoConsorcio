@@ -18,8 +18,28 @@
 
 
     <script>
+
+
+
         $(document).ready(function () {
-            $("#example").DataTable();
+
+            var testDataUrl = "http://uira.com.br/files/ocorrencias.json"
+
+            $("#example").DataTable({
+                "ajax": testDataUrl,
+                "columns": [
+                    { "data": "data.numero_Ocorrencia" },
+                    { "data": "data.assunto" },
+                    { "data": "data.cliente" },
+                    { "data": "data.tipo_Ocorrencia" },
+                    { "data": "data.canal_Abertura" },
+                    { "data": "data.e_mail" },
+                    { "data": "data.grupo" },
+                    { "data": "data.cota" },
+                    { "data": "data.data_Criacao" },
+                    { "data": "ata.criado_Por" },
+                ]
+            });
         });
 
 
@@ -27,7 +47,7 @@
             $("#example").DataTable();
 
             // Premade test data, you can also use your own
-            var testDataUrl = "http://uira.com.br/files/ocorrencias.json"
+            
 
             $("#loadData").click(function () {
                 loadData();
@@ -44,9 +64,19 @@
                         nome: "ter02699@rootbrasil",
                         senha: "Caixa123"
                     }),
+                    cors: true,
+                    secure: true,
+                    headers: {
+                        'Access-Control-Allow-Origin': '*',
+                    },
                     dataType: "json",
+                    beforeSend: function () {
+                        // setting a timeout
+                        $('body').addClass("loading");
+                    },
                     success: function (data) {
                         populateDataTable(data.data);
+                        $('body').removeClass("loading");
                     },
                     error: function (xhr, status) {
                         alert("error");
@@ -57,38 +87,61 @@
             // populate the data table with JSON data
             function populateDataTable(data) {
                 console.log("populating data table...");
+                console.log(data);
+
                 // clear the table before populating it with more data
                 $("#example").DataTable().clear();
                 var length = Object.keys(data).length;
-                for (var i = 1; i < length + 1; i++) {
-                    var data = data.data;
 
-                    // You could also use an ajax property on the data table initialization
-                    $('#example').dataTable().fnAddData([
-                        data.numero_Ocorrencia,
-                        data.assunto,
-                        data.cliente,
-                        data.tipo_Ocorrencia,
-                        data.canal_Abertura,
-                        data.e_mail,
-                        data.grupo,
-                        data.cota,
-                        data.data_Criacao,
-                        data.criado_Por,
-                    ]);
-                }
+                // You could also use an ajax property on the data table initialization
+                $('#example').dataTable().fnAddData([
+                    data.numero_Ocorrencia,
+                    data.assunto,
+                    data.cliente,
+                    data.tipo_Ocorrencia,
+                    data.canal_Abertura,
+                    data.e_mail,
+                    data.grupo,
+                    data.cota,
+                    data.data_Criacao,
+                    data.criado_Por,
+                ]);
             }
         });
-        
+
     </script>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background: rgba( 255, 255, 255, .8 ) url('http://i.stack.imgur.com/FhHRx.gif') 50% 50% no-repeat;
+        }
+
+        /* enquanto estiver carregando, o scroll da página estará desativado */
+        body.loading {
+            overflow: hidden;
+        }
+
+        body.loading .modal {
+            display: block;
+        }
+    </style>
 
     <!------ Include the above in your HEAD tag ---------->
     <title>Certificado RTF</title>
 </head>
 <body>
     <div class="container">
-        <div class="panel">
+        <div>
             <button id="loadData" class="btn btn-default">Load Data</button>
+        </div>
+        <div class="panel">
+
             <table id="example" class="table table-striped table-bordered nowrap" style="width:100%" cellspacing="0">
                 <thead>
                     <tr>
@@ -110,5 +163,6 @@
         <button id="loadData" class="btn btn-success">Baixar Excel</button>
 
     </div>
-    </body>
+    <div class="modal"></div>
+</body>
 </html>
